@@ -1,0 +1,6 @@
+numpy
+opencv-python
+transformers
+paddlepaddle
+paddleocr>=2.0.1
+torch
