@@ -13,31 +13,33 @@ logging.getLogger("ppocr").setLevel(logging.ERROR)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# @contextlib.contextmanager
-# def suppress_print():
-#     with open(os.devnull, "w") as fnull:
-#         with contextlib.redirect_stdout(fnull), contextlib.redirect_stderr(fnull):
-#             yield
+@contextlib.contextmanager
+def suppress_print():
+    with open(os.devnull, "w") as fnull:
+        with contextlib.redirect_stdout(fnull), contextlib.redirect_stderr(fnull):
+            yield
 
 def initialize_models():
     checkpoint = "google/owlv2-base-patch16-ensemble"
-    detector = pipeline(
-        model=checkpoint,
-        task="zero-shot-object-detection",
-        device=device,
-        use_fast=True
-    )
- 
-    ocr = PaddleOCR(use_angle_cls=True, lang="en")
+    with suppress_print():
+        detector = pipeline(
+            model=checkpoint,
+            task="zero-shot-object-detection",
+            device=device,
+            use_fast=True
+        )
+    with suppress_print():
+        ocr = PaddleOCR(use_angle_cls=True, lang="en")
     return detector, ocr
 
 def process_image(image_path, detector, ocr):
     original_image = Image.open(image_path)
 
-    prediction = detector(
-        original_image,
-        candidate_labels=["license plate"],
-    )[0]
+    with suppress_print():
+        prediction = detector(
+            original_image,
+            candidate_labels=["license plate"],
+        )[0]
 
     box = prediction["box"]
     cropped_image = original_image.crop(list(box.values()))
@@ -45,7 +47,8 @@ def process_image(image_path, detector, ocr):
     cropped_numpy_image = np.array(cropped_image)
     cropped_numpy_image_rgb = cropped_numpy_image[:, :, ::-1].copy()
 
-    result = ocr.ocr(cropped_numpy_image_rgb, cls=True)
+    with suppress_print():
+        result = ocr.ocr(cropped_numpy_image_rgb, cls=True)
 
     if result:
         detected_text = sorted(result[0], key=lambda x: x[0][2][1])
